@@ -1,6 +1,6 @@
 # ReMatch
 
-**A general-purpose visual re-identification pipeline for individual recognition in wildlife imagery.**
+**Re-identification of patterned species in open-set scenarios by matching keypoints and lines**
 
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -116,7 +116,7 @@ Place the following files in the `models/` directory:
 | File | Description | Source |
 |------|-------------|--------|
 | `sam_vit_h_4b8939.pth` | SAM ViT-H checkpoint | [segment-anything releases](https://github.com/facebookresearch/segment-anything#model-checkpoints) |
-| `yolo-segmentation.pt` | Custom fine-tuned YOLO segmentation model | User-provided |
+| `yolo-segmentation.pt` | Custom fine-tuned YOLO segmentation model | [Hugging Face: roberalcaraz/lizard-body-segmentation](https://huggingface.co/roberalcaraz/lizard-body-segmentation/tree/main) |
 | `model.yml.gz` | Structured edge detection model | [OpenCV contrib](https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz) |
 
 > **Note**: GlueStick and SuperPoint weights are downloaded automatically on first run.
