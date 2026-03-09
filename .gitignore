@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+venv/
+.env
+
+# Model weights (large binary files)
+models/*.pth
+models/*.pt
+models/*.tar
+models/model.yml.gz
+
+# Data and results (generated at runtime)
+data/
+databases/
+results/
+logs/
+
+# Pipeline artifacts
+*.lmdb/
+*.h5
+*.parquet
+*.pkl
