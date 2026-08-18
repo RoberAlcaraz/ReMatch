@@ -344,8 +344,7 @@ ReMatch/
 }
 ```
 
-Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). Please also cite
-GlueStick, on which the matching stage is built — see
+Please also cite GlueStick, on which the matching stage is built — see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ---

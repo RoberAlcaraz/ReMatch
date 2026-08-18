@@ -10,9 +10,8 @@
 # NOTE: the root LICENSE file of this repository (MIT) does NOT apply to this
 # file. See THIRD_PARTY_NOTICES.md.
 #
-# Changes were made to this file by Hiroaki Yamagiwa
-# (https://github.com/ymgw55/segment-anything-edge-detection) and subsequently
-# by the ReMatch authors, to expose per-mask probability maps.
+# This file has been modified from the original, to expose per-mask probability
+# maps used by the pattern-extraction step.
 
 from typing import Any, Dict, List, Optional, Tuple
 

@@ -32,12 +32,7 @@ Matching by Sticking Points and Lines Together*, ICCV 2023.
 | Original | [facebookresearch/segment-anything](https://github.com/facebookresearch/segment-anything) (`automatic_mask_generator.py`) |
 | Copyright | (c) Meta Platforms, Inc. and affiliates |
 | License | Apache License 2.0 — full text in [`licenses/Apache-2.0.txt`](licenses/Apache-2.0.txt) |
-| Intermediate | Modified by Hiroaki Yamagiwa in [ymgw55/segment-anything-edge-detection](https://github.com/ymgw55/segment-anything-edge-detection) |
-| Modified | Yes — extended by the ReMatch authors to return per-mask probability maps used by the pattern-extraction step |
-
-> **Note.** The intermediate repository does not publish an explicit license
-> file. The Meta-authored portions of this file remain under Apache-2.0, which
-> is the basis on which it is redistributed here.
+| Modified | Yes — extended to return per-mask probability maps used by the pattern-extraction step |
 
 ---
 
