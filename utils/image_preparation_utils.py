@@ -1044,6 +1044,9 @@ def save_image_paths(train_folder, test_folder, good_images_folder):
 
 
 def save_metadata(train_folder, test_folder):
+    # Optional: only needed to reproduce the paper's train/test split metadata.
+    # `pip install wildlife-tools` — deliberately not in requirements.txt, since
+    # the training and query pipelines do not use it.
     from wildlife_tools.data import WildlifeDataset
 
     class Test(WildlifeDataset):
