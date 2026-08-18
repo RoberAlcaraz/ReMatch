@@ -5,56 +5,309 @@
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-ReMatch combines state-of-the-art computer vision models to segment individuals from images, extract distinctive visual patterns, and match them across observations using learned features. It supports both **training a re-identification model** from a labeled database and **querying new images** against the existing database to find matches.
+ReMatch identifies individual animals from photographs of their natural patterns —
+lizard scale mosaics, zebra stripes, seal pelage, shark spots, human fingerprints
+alike. It segments the individual, matches keypoints **and** line segments between
+every pair of images with [GlueStick](https://github.com/cvg/GlueStick), and turns
+those correspondences into a calibrated probability that two photographs show the
+same animal.
 
-> **Paper**: [ReMatch: Re-identification of patterned species in open-set scenarios by matching keypoints and lines](https://www.researchsquare.com/article/rs-7302183/v1)
+Its distinguishing feature is **open-set operation**. Unlike approaches that assume
+a fixed set of known individuals, ReMatch supports the detection of previously
+unseen individuals through a learned identity-level threshold, with minimal manual
+annotation — so a query can be answered *"this is a new animal"* rather than being
+forced onto the closest known match.
+
+Across five heterogeneous datasets (Balearic wall lizards, plains zebras, Saimaa
+ringed seals, whale sharks and human fingerprints) ReMatch achieves an average
+closed-set Top-1 accuracy of **88.23 %** (Top-5: 90.22 %) and an average open-set
+accuracy of **85.78 %**. Performance is pattern-dependent: ReMatch excels on
+fine-scale local patterns such as scale mosaics and fingerprints (up to 98.51 %)
+and remains competitive under viewpoint variation, while other deep-embedding
+models retain an advantage on datasets dominated by global cues, such as whale
+sharks.
+
+> **Paper** — Alcaraz, Amores, Villa, Marcos, Tavecchia, Igual & Rotger,
+> *ReMatch: Re-identification of patterned species in open-set scenarios by
+> matching keypoints and lines*, **Pattern Recognition** (Elsevier), 2026.
+> Accepted, in press — DOI to follow.
 
 ---
 
-## Pipeline overview
+## Contents
 
-ReMatch operates in two modes:
+- [Try it first](#try-it-first)
+- [How it works](#how-it-works)
+- [Installation](#installation)
+- [Data layout](#data-layout)
+- [Training a model](#training-a-model)
+- [Identifying new images](#identifying-new-images)
+- [Adapting to a new species](#adapting-to-a-new-species)
+- [Configuration](#configuration)
+- [Running on a cluster](#running-on-a-cluster)
+- [Project structure](#project-structure)
+- [Citation](#citation)
+- [License](#license)
 
-### Training pipeline
+---
 
-Build a re-identification model from a labeled image database.
+## Try it first
+
+Two notebooks run the method end to end on a small dataset bundled in
+[`data/`](data/): 12 Balearic wall lizards in the gallery, and a query batch of 20
+photographs of which **seven show animals the model has never seen**.
+
+| | |
+|---|---|
+| [`demo-1-training.ipynb`](demo-1-training.ipynb) | Match every pair, train the classifier, meta-model and threshold |
+| [`demo-2-query.ipynb`](demo-2-query.ipynb) | Identify the new batch, reject the unseen animals, score the result |
+
+```bash
+pip install -r requirements.txt
+jupyter lab demo-1-training.ipynb
+```
+
+They read their configuration from `params/`, their helpers from `utils/`, and
+write into `results/` — the same paths the pipeline scripts use, so the demo *is*
+the pipeline rather than a parallel implementation. No model weights are needed:
+GlueStick and SuperPoint download themselves, and the bundled images are already
+pattern crops. See [`data/README.md`](data/README.md).
+
+The images come from **BalearicLizard**, published separately:
+
+> Alcaraz, R., Albalat-Oliver, B., Villa, A. *et al.* A long-term photographic
+> dataset for individual identification of the Balearic wall lizard.
+> *Scientific Data* (2026).
+> [doi:10.1038/s41597-026-07411-z](https://doi.org/10.1038/s41597-026-07411-z)
+> · [Kaggle](https://www.kaggle.com/datasets/roberalcaraz/baleariclizard)
+
+---
+
+## How it works
+
+Five stages, common to every dataset:
+
+1. **ROI segmentation** — isolate the animal from its background.
+2. **Wireframe extraction** — describe it with SuperPoint keypoints *and* LSD line
+   segments, merged into a single wireframe per image.
+3. **Pair-level feature aggregation** — match two wireframes with GlueStick, drop
+   matches scoring below 0.2, and reduce what survives to four numbers:
+   `num_nonzero_points`, `mean_point_prob`, `num_nonzero_lines`, `mean_line_prob`.
+4. **Pair-level classification** — Logistic Regression, Random Forest, XGBoost and
+   CatBoost are compared over image-disjoint rolling folds; the best mean F1 wins.
+   Output: a probability `p` that a pair shows the same individual.
+5. **Identity-level calibration** — for a query and a candidate identity, `p` is
+   aggregated over all that identity's photographs into `[p, max, mean]` and passed
+   through a logistic-regression meta-model. If the best score falls below the
+   threshold **τ\***, the query is reported as a new individual.
+
+One stage is optional. **Pattern extraction** (SAM + structured edge detection)
+further isolates fine-scale texture and is worth enabling for species patterned
+like lizards; the other four datasets in the paper match on the segmented ROI
+directly.
+
+Stages 4 and 5 are **retrained per dataset**. That is a design choice, not a
+limitation — the models are small and the matching stack above them never
+changes.
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/RoberAlcaraz/ReMatch.git
+cd ReMatch
+conda create -n rematch python=3.13
+conda activate rematch
+pip install -r requirements.txt
+```
+
+Two pins are not interchangeable with their obvious alternatives:
+**`opencv-contrib-python`** (not `opencv-python`) because pattern extraction calls
+`cv2.ximgproc`, and **`scikit-learn==1.7.2`** because trained models are stored as
+scikit-learn pickles.
+
+Grounded-SAM segmentation additionally needs GroundingDINO, which is not on PyPI:
+
+```bash
+pip install git+https://github.com/IDEA-Research/GroundingDINO.git
+```
+
+A CUDA-capable GPU is strongly recommended. Everything falls back to CPU, but
+matching every pair of a real database is impractically slow without one.
+
+### Model weights
+
+Place these in `models/`:
+
+| File | What for | Source |
+|---|---|---|
+| `sam_vit_h_4b8939.pth` | SAM ViT-H — segmentation and pattern extraction | [segment-anything releases](https://github.com/facebookresearch/segment-anything#model-checkpoints) |
+| `groundingdino_swint_ogc.pth` | GroundingDINO — text-prompted detection | [IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) |
+| `model.yml.gz` | Structured edge detection — pattern extraction only | [OpenCV contrib](https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz) |
+| `yolo-segmentation.pt` | Optional: fine-tuned YOLO detector for lizards | [Hugging Face](https://huggingface.co/roberalcaraz/lizard-body-segmentation) |
+
+GlueStick and SuperPoint weights download themselves on first run. Behind a
+TLS-intercepting proxy that can fail; fix your trust store, drop the weights into
+`resources/weights/` by hand, or as a last resort set `REMATCH_INSECURE_SSL=1`.
+
+---
+
+## Data layout
+
+Training images go in one directory per individual — **the directory name is the
+identity label**:
 
 ```
-Raw labeled images
-  │
-  ├─ 1. Image preparation
-  │     YOLO segmentation → SAM pattern extraction
-  │     Outputs: segmented images, pattern images, unique IDs
-  │
-  ├─ 2. Pattern matching & feature aggregation
-  │     SuperPoint wireframe descriptors → GlueStick pairwise matching → feature aggregation
-  │     Outputs: wireframes (.h5), matches (.lmdb), features (.parquet)
-  │
-  └─ 3. Model training
-        ML models + Logistic Regression meta-model + threshold optimization
-        Outputs: trained models (.pkl), optimal threshold
+data/images/
+├── individual_001/
+│   ├── IMG_0001.jpg
+│   └── IMG_0002.jpg
+└── individual_002/
+    └── …
 ```
 
-### Query pipeline
-
-Identify new individuals by matching against the existing database.
+Each batch of new photographs to identify goes in its own directory:
 
 ```
-New unlabeled images
-  │
-  ├─ 1. Image preparation
-  │     Same segmentation + pattern extraction as training
-  │     → Manual review checkpoint
-  │
-  ├─ 2. Matching & prediction
-  │     Wireframe computation → match against DB → feature aggregation → model prediction
-  │     Outputs: top-10 candidate matches per image (.csv)
-  │     → Expert review checkpoint
-  │
-  └─ 3. Add to database
-        Merge reviewed results into the main database
-        Outputs: updated DB (wireframes, matches, unique IDs)
+data/new/Batch1/
+├── IMG_1001.jpg
+└── IMG_1002.jpg
 ```
+
+---
+
+## Training a model
+
+Run from the repository root, in order. Each step reads what the previous one
+wrote.
+
+```bash
+# 1. Segment every image, and optionally extract patterns.
+python scripts/P1-image_preparation.py
+```
+Writes `data/images-segmented/`, `results/unique_ids.txt`, and — with
+`STEP_1B = True` — `data/images-pattern/`.
+*Review the segmentations before continuing; a bad mask wastes the whole matching run.*
+
+```bash
+# 2. Compute wireframes and match every pair.
+python scripts/P2-pattern_matching.py
+```
+Writes `results/precomputed_wireframe.h5` and `results/matches.lmdb/`. **This is
+the expensive step** — cost grows quadratically with database size. Both caches
+are resumable, so rerunning skips work already done.
+
+```bash
+# 3. Aggregate matches into the pair-level feature table.
+python scripts/P3-feature_aggregation.py
+```
+Writes `results/processed_matches.parquet`.
+
+```bash
+# 4. Train the classifier, meta-model and threshold.
+python scripts/P4-model_training.py
+```
+Writes `results/best_classification_model.pkl`,
+`results/logistic_regression_model.pkl`, `results/scaler.pkl` and
+`results/threshold.txt`. These four files are your model.
+
+---
+
+## Identifying new images
+
+```bash
+export NEW_IMAGES_NAME="Batch1"     # which directory under data/new/ to process
+
+# 1. Segment the new images.
+python scripts/Q1-image_preparation.py
+```
+*Review `data/new/Batch1_checks/` and delete failures from
+`data/new/Batch1-pattern/` before continuing.*
+
+```bash
+# 2. Match against the database and rank candidates.
+python scripts/Q2-pattern_matching.py
+python scripts/Q3-feature_aggregation.py
+python scripts/Q4-model_application.py
+```
+Writes `results/top10_results_Batch1.csv` — the ten best candidate identities per
+query, with a calibrated probability each. Queries scoring below τ\* are marked
+`new`.
+
+*Review that file: confirm the matches and assign identities to genuinely new
+animals.*
+
+```bash
+# 3. Merge the reviewed batch into the database.
+python scripts/Q5-add_results_to_db.py
+```
+Adds the new images, wireframes and matches to the database, so the gallery grows
+as you work.
+
+The two review checkpoints are deliberate. ReMatch ranks candidates for an
+expert; it does not silently commit identity decisions.
+
+---
+
+## Adapting to a new species
+
+1. **Start with Grounded-SAM.** Set `SEGMENTATION_MODEL = "GroundedSAM"` and
+   `CLASSES = ["your animal"]` in `params/image_preparation_params.py`. It is
+   text-prompted, so it needs no per-species training — the right thing to try
+   first. The paper uses this route for zebras, seals and sharks.
+2. **If segmentation struggles**, fine-tune a YOLO segmentation model on a few
+   hundred annotated images, point `YOLO_SEGMENTATION_MODEL` at it and set
+   `SEGMENTATION_MODEL = "YOLO"`. A bounded, one-time annotation cost — this is
+   the route used for lizards.
+3. **Pattern extraction** (`STEP_1B`) isolates fine-scale texture with SAM and
+   structured edges. Leave it on for lizard-like scale mosaics; turn it off if
+   the whole segmented animal is the pattern, as with stripes or spots.
+4. **Retrain.** Run the four `P` scripts on your labelled images. Only the two
+   small models change — the matching stack never does.
+
+---
+
+## Configuration
+
+Everything lives in two files:
+
+- **`params/params.py`** — GlueStick and wireframe settings, `IMAGE_HEIGHT_RESIZE`
+  (670 px; the models are calibrated against it, so changing it means retraining),
+  and every data and result path.
+- **`params/image_preparation_params.py`** — `SEGMENTATION_MODEL`
+  (`"GroundedSAM"` or `"YOLO"`), `CLASSES`, detection thresholds, and the step
+  toggles `STEP_1A` (segmentation) and `STEP_1B` (pattern extraction).
+
+`NEW_IMAGES_NAME` is read from the environment and selects which batch the `Q`
+scripts operate on.
+
+---
+
+## Running on a cluster
+
+The scripts are plain Python and take no arguments, so a job script is three
+lines. For SLURM:
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=rematch-match
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=12:00:00
+
+conda activate rematch
+export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
+export NEW_IMAGES_NAME="${1:-Batch1}"   # only needed for the Q scripts
+
+python scripts/P2-pattern_matching.py
+python scripts/P3-feature_aggregation.py
+```
+
+Give step 2 the most time and CPUs — it dominates. Everything else is minutes.
+Always run from the repository root: paths in `params/` are relative to it.
 
 ---
 
@@ -62,182 +315,45 @@ New unlabeled images
 
 ```
 ReMatch/
-├── scripts/                  # Main pipeline scripts
-│   ├── P1-image_preparation.py       # Training: segment + extract patterns
-│   ├── P2-pattern_matching.py        # Training: compute wireframes + match
-│   ├── P3-feature_aggregation.py     # Training: aggregate match features
-│   ├── P4-model_training.py          # Training: train classification models
-│   ├── Q1-image_preparation.py       # Query: segment + extract patterns
-│   ├── Q2-pattern_matching.py        # Query: match against DB
-│   ├── Q3-feature_aggregation.py     # Query: aggregate features
-│   ├── Q4-model_application.py       # Query: apply models, rank candidates
-│   └── Q5-add_results_to_db.py       # Query: merge reviewed results into DB
-├── gluestick/                # GlueStick point-and-line matching module
-│   └── models/               # SuperPoint, wireframe, GlueStick model definitions
-├── utils/                    # Shared utilities
-│   ├── utils.py              # Wireframe computation, pattern matching, feature processing
-│   ├── image_preparation_utils.py    # YOLO segmentation, SAM pattern extraction
-│   └── automatic_mask_and_probability_generator.py  # SAM mask generator with Sobel filtering
-├── params/                   # Configuration files
-│   ├── params.py             # Model configs, paths, GlueStick/wireframe settings
-│   └── image_preparation_params.py   # Segmentation and pattern extraction settings
-├── models/                   # Pre-trained model weights (not tracked in git)
-├── data/                     # Image data (not tracked in git)
-│   ├── images/               # Labeled training images: images/<individual_id>/
-│   └── new/                  # New query image batches: new/<batch_name>/
-├── results/                  # Pipeline outputs (not tracked in git)
-├── P-step*.sh                # SLURM wrappers for training pipeline
-└── Q-step*.sh                # SLURM wrappers for query pipeline
+├── scripts/          P1–P4 training, Q1–Q5 query — the entry points
+├── params/           Configuration
+├── utils/            Wireframes, matching, segmentation, pattern extraction
+├── gluestick/        Vendored GlueStick (MIT) — see gluestick/NOTICE.md
+├── demo-1-training.ipynb   Walk through training, on the bundled lizard data
+├── demo-2-query.ipynb      Walk through identification, including open-set rejection
+├── data/             Your images, plus the bundled lizard demo set
+├── models/           Model weights — downloaded, not tracked
+├── results/          Pipeline outputs and trained models — not tracked
+└── licenses/         Third-party license texts
 ```
-
----
-
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/RoberAlcaraz/ReMatch.git
-cd ReMatch
-```
-
-### 2. Create environment and install dependencies
-
-```bash
-conda create -n rematch python=3.13
-conda activate rematch
-pip install -r requirements.txt
-```
-
-### 3. Download model weights
-
-Place the following files in the `models/` directory:
-
-| File | Description | Source |
-|------|-------------|--------|
-| `sam_vit_h_4b8939.pth` | SAM ViT-H checkpoint | [segment-anything releases](https://github.com/facebookresearch/segment-anything#model-checkpoints) |
-| `yolo-segmentation.pt` | Custom fine-tuned YOLO segmentation model | [Hugging Face: roberalcaraz/lizard-body-segmentation](https://huggingface.co/roberalcaraz/lizard-body-segmentation/tree/main) |
-| `model.yml.gz` | Structured edge detection model | [OpenCV contrib](https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz) |
-
-> **Note**: GlueStick and SuperPoint weights are downloaded automatically on first run.
-
----
-
-## Data format
-
-### Training data
-
-Organize labeled images by individual identity:
-
-```
-data/images/
-├── individual_001/
-│   ├── IMG_0001.jpg
-│   ├── IMG_0002.jpg
-│   └── ...
-├── individual_002/
-│   └── ...
-└── ...
-```
-
-### Query data
-
-Place new images in a named batch folder:
-
-```
-data/new/<batch_name>/
-├── IMG_1001.jpg
-├── IMG_1002.jpg
-└── ...
-```
-
----
-
-## Usage
-
-### Training pipeline
-
-Run the three training steps sequentially:
-
-```bash
-# Step 1: Segment images and extract patterns
-python scripts/P1-image_preparation.py
-
-# Step 2: Compute wireframes, match all pairs, and aggregate features
-python scripts/P2-pattern_matching.py
-python scripts/P3-feature_aggregation.py
-
-# Step 3: Train classification models
-python scripts/P4-model_training.py
-```
-
-**Outputs** (in `results/`):
-- `best_classification_model.pkl` — trained Random Forest model
-- `logistic_regression_model.pkl` — meta-model for probability calibration
-- `scaler.pkl` — feature scaler
-- `threshold.txt` — optimal classification threshold
-
-For detailed information, see [README_training_pipeline.md](README_training_pipeline.md).
-
-### Query pipeline
-
-Process a new batch of images against the existing database:
-
-```bash
-# Set the batch name
-export NEW_IMAGES_NAME="Batch1"
-
-# Step 1: Segment and extract patterns from new images
-python scripts/Q1-image_preparation.py
-# → Review results in data/new/<batch_name>_checks/
-#   Remove bad images from data/new/<batch_name>-pattern/
-
-# Step 2: Match against DB and predict
-python scripts/Q2-pattern_matching.py
-python scripts/Q3-feature_aggregation.py
-python scripts/Q4-model_application.py
-# → Review results/top10_results_<batch_name>.csv
-#   Confirm matches and assign IDs for new individuals
-
-# Step 3: Add reviewed results to the main database
-python scripts/Q5-add_results_to_db.py
-```
-
-For detailed information, see [README_predict_new_images.md](README_predict_new_images.md).
-
-### SLURM (HPC)
-
-SLURM wrapper scripts (`P-step*.sh`, `Q-step*.sh`) are provided for running on HPC clusters. For query scripts, pass the batch name as an argument:
-
-```bash
-sbatch Q-step1-image_preparation.sh Batch1
-```
-
----
-
-## Configuration
-
-Key parameters are defined in `params/`:
-
-- **`params/params.py`** — GlueStick and wireframe configuration, model paths, data paths.
-- **`params/image_preparation_params.py`** — Segmentation model selection (`YOLO` or `GroundedSAM`), step toggles (`STEP_1A`, `STEP_1B`), image paths.
 
 ---
 
 ## Citation
 
-If you use ReMatch in your research, please cite:
-
-```
-@article{alcaraz2025rematch,
-  title={ReMatch: Re-identification of patterned species in open-set scenarios by matching keypoints and lines},
-  author={Alcaraz, Roberto and Amores, Angel and Rotger, Andreu},
-  year={2025}
+```bibtex
+@article{alcaraz2026rematch,
+  title   = {{ReMatch}: Re-identification of patterned species in open-set
+             scenarios by matching keypoints and lines},
+  author  = {Alcaraz, Roberto and Amores, Angel and Villa, Alejandro and
+             Marcos, Marta and Tavecchia, Giacomo and Igual, Jos{\'e} Manuel and
+             Rotger, Andreu},
+  journal = {Pattern Recognition},
+  year    = {2026},
+  note    = {In press}
 }
 ```
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). Please also cite
+GlueStick, on which the matching stage is built — see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ---
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE). Bundled and runtime third-party components carry
+their own terms, including vendored GlueStick code (MIT), the SAM-derived mask
+generator (Apache-2.0) and Ultralytics YOLO (**AGPL-3.0**, with obligations of its
+own if you redistribute a service built on it). All documented in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
