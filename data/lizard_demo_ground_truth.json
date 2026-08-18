@@ -1,0 +1,199 @@
+{
+  "gallery_individuals": [
+    "lizard_C116",
+    "lizard_C169",
+    "lizard_C185",
+    "lizard_C214",
+    "lizard_C236",
+    "lizard_C309",
+    "lizard_C373",
+    "lizard_C421",
+    "lizard_C501",
+    "lizard_C56",
+    "lizard_C588",
+    "lizard_C84"
+  ],
+  "unknown_individuals": [
+    "lizard_C307",
+    "lizard_C328",
+    "lizard_C563",
+    "lizard_C564"
+  ],
+  "batch_name": "lizard_demo",
+  "gallery": {
+    "lizard_C116": [
+      "IMG_3943.png",
+      "IMG_4133.png",
+      "IMG_4204.png",
+      "IMG_4328.png"
+    ],
+    "lizard_C169": [
+      "IMG_0251.png",
+      "IMG_0344.png",
+      "IMG_0462.png",
+      "IMG_0536.png"
+    ],
+    "lizard_C185": [
+      "C185_IMG_1049.png",
+      "IMG_0218.png",
+      "IMG_0348.png",
+      "IMG_0461.png"
+    ],
+    "lizard_C214": [
+      "C214_IMG_0197.png",
+      "C214_IMG_0755.png",
+      "C214_IMG_1034.png",
+      "C214_IMG_1162.png"
+    ],
+    "lizard_C236": [
+      "C236_IMG_1151.png",
+      "C236_IMG_1168.png",
+      "IMG_0255.png",
+      "IMG_0366.png"
+    ],
+    "lizard_C309": [
+      "C439_IMG_0745.png",
+      "C439_IMG_1070.png",
+      "C439_IMG_1079.png",
+      "C439_IMG_1580.png"
+    ],
+    "lizard_C373": [
+      "C373_IMG_1018.png",
+      "F2 (10).png",
+      "F3 (27).png",
+      "IMG_0033.png"
+    ],
+    "lizard_C421": [
+      "C421_IMG_0209.png",
+      "C421_IMG_0751.png",
+      "C421_IMG_1043.png",
+      "C421_IMG_1568.png"
+    ],
+    "lizard_C501": [
+      "C501_IMG_1023.png",
+      "C501_IMG_1129.png",
+      "F1 (74).png",
+      "F2 (25).png"
+    ],
+    "lizard_C56": [
+      "C56_M_2124.png",
+      "IMG_0433.png",
+      "IMG_0511.png",
+      "IMG_0614.png"
+    ],
+    "lizard_C588": [
+      "C588_IMG_1167.png",
+      "F1 (61).png",
+      "IMG_0058.png",
+      "IMG_0099.png"
+    ],
+    "lizard_C84": [
+      "C84_H_2202.png",
+      "C84_IMG_0202.png",
+      "C84_IMG_1000.png",
+      "C84_IMG_1033.png"
+    ]
+  },
+  "query": [
+    {
+      "image": "1681.png",
+      "true_identity": "lizard_C563",
+      "in_gallery": false
+    },
+    {
+      "image": "22.png",
+      "true_identity": "lizard_C328",
+      "in_gallery": false
+    },
+    {
+      "image": "C328_IMG_1026.png",
+      "true_identity": "lizard_C328",
+      "in_gallery": false
+    },
+    {
+      "image": "C563_IMG_1024.png",
+      "true_identity": "lizard_C563",
+      "in_gallery": false
+    },
+    {
+      "image": "C564_IMG_0743.png",
+      "true_identity": "lizard_C564",
+      "in_gallery": false
+    },
+    {
+      "image": "IMG_0179.png",
+      "true_identity": "lizard_C421",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_0286.png",
+      "true_identity": "lizard_C307",
+      "in_gallery": false
+    },
+    {
+      "image": "IMG_0308.png",
+      "true_identity": "lizard_C307",
+      "in_gallery": false
+    },
+    {
+      "image": "IMG_0330.png",
+      "true_identity": "lizard_C309",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_0579.png",
+      "true_identity": "lizard_C501",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_3623.png",
+      "true_identity": "lizard_C373",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_3702.png",
+      "true_identity": "lizard_C373",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_5444.png",
+      "true_identity": "lizard_C214",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_5513.png",
+      "true_identity": "lizard_C56",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_6859.png",
+      "true_identity": "lizard_C185",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_7502.png",
+      "true_identity": "lizard_C214",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_7565.png",
+      "true_identity": "lizard_C116",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_7787.png",
+      "true_identity": "lizard_C84",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_8722.png",
+      "true_identity": "lizard_C185",
+      "in_gallery": true
+    },
+    {
+      "image": "IMG_9846.png",
+      "true_identity": "lizard_C501",
+      "in_gallery": true
+    }
+  ]
+}
