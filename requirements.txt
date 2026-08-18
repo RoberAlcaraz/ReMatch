@@ -1,18 +1,44 @@
-torch
-torchvision
-numpy
-pandas
-opencv-python
-matplotlib
-seaborn
-scikit-learn
-xgboost
-catboost
-joblib
-segment-anything
-h5py
-lmdb
-tqdm
-pytlsd
-omegaconf
-ultralytics
+# ReMatch — runtime dependencies
+# Versions pinned to the environment used for the experiments reported in the paper
+# (Python 3.13.9, CUDA 12.x, NVIDIA RTX 6000 Ada).
+# Use `>=` instead of `==` if you need to relax them for your platform.
+
+# --- Deep learning ---
+torch==2.9.1
+torchvision==0.24.1
+ultralytics==8.3.88            # YOLO ROI segmentation
+# SAM (pattern extraction). Official install is from source; the PyPI mirror
+# `segment-anything==1.0` exposes the same API if you prefer a plain pip install.
+segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@dca509f
+
+# --- Image processing ---
+# opencv-contrib-python (NOT opencv-python) is required: the pattern-extraction
+# step uses cv2.ximgproc.createStructuredEdgeDetection, which ships only in contrib.
+opencv-contrib-python==4.13.0.92
+pillow==12.0.0
+pytlsd==0.0.5                  # LSD line segment detector used by GlueStick
+
+# --- Scientific stack ---
+numpy==2.2.6
+scipy==1.16.3
+pandas==2.3.3
+pyarrow==22.0.0                # parquet engine for the pair-level feature tables
+h5py==3.15.1                   # wireframe cache
+lmdb==1.7.5                    # pairwise match cache
+
+# --- Models ---
+scikit-learn==1.7.2            # pair-level classifiers, meta-model, scaler
+xgboost==3.1.2
+catboost==1.2.8
+joblib==1.5.2                  # (de)serialisation of the released models
+
+# --- Optional: Grounded-SAM segmentation ---
+# GroundingDINO is not on PyPI. Needed only for SEGMENTATION_MODEL="GroundedSAM":
+#     pip install git+https://github.com/IDEA-Research/GroundingDINO.git
+supervision==0.27.0            # detection containers used by the Grounded-SAM path
+
+# --- Utilities ---
+omegaconf==2.2.3
+tqdm==4.67.1
+matplotlib==3.10.7
+seaborn==0.13.2
