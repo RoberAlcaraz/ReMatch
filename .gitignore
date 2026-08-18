@@ -1,35 +1,46 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.egg-info/
-*.egg
 dist/
 build/
-.eggs/
 
-# IDE
+# IDE / notebooks
 .vscode/
 .idea/
+.ipynb_checkpoints/
 
 # Environment
 venv/
 .env
 
-# Model weights (large binary files)
-models/*.pth
-models/*.pt
-models/*.tar
-models/model.yml.gz
+# Model weights — downloaded separately, see README
+/models/*
+!/models/.gitkeep
+!/models/GroundingDINO_SwinT_OGC.py
+/resources/weights/
 
-# Data and results (generated at runtime)
-data/
-databases/
-results/
-logs/
-
-# Pipeline artifacts
+# Runtime outputs
+/results/*
+!/results/.gitkeep
+/databases/
+catboost_info/
+nohup*.out
 *.lmdb/
 *.h5
 *.parquet
 *.pkl
+
+# data/ is your workspace and is not tracked — except the bundled lizard demo
+# set (the `lizard_*` names). Anything you add under your own names stays out.
+/data/*
+!/data/README.md
+!/data/lizard_demo_ground_truth.json
+
+!/data/images-pattern/
+/data/images-pattern/*
+!/data/images-pattern/lizard_*/
+
+!/data/new/
+/data/new/*
+!/data/new/lizard_demo-pattern/
