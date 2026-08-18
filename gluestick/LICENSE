@@ -1,7 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Roberto Alcaraz, Angel Amores, Alejandro Villa, Marta Marcos,
-                   Giacomo Tavecchia, Jose Manuel Igual, Andreu Rotger
+Copyright (c) 2023 Computer Vision and Geometry Lab
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Portions of this repository are third-party code under different licenses.
-See THIRD_PARTY_NOTICES.md.

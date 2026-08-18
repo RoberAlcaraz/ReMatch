@@ -1,0 +1,68 @@
+cff-version: 1.2.0
+title: "ReMatch: Re-identification of patterned species in open-set scenarios by matching keypoints and lines"
+message: "If you use this software, please cite both the software and the paper."
+type: software
+authors:
+  # TODO: add `affiliation:` and `orcid:` for each author if you want them in
+  # the generated citation, and an `email:` for the corresponding author.
+  - given-names: Roberto
+    family-names: Alcaraz
+  - given-names: Angel
+    family-names: Amores
+  - given-names: Alejandro
+    family-names: Villa
+  - given-names: Marta
+    family-names: Marcos
+  - given-names: Giacomo
+    family-names: Tavecchia
+  - given-names: "Jose Manuel"
+    family-names: Igual
+  - given-names: Andreu
+    family-names: Rotger
+repository-code: "https://github.com/RoberAlcaraz/ReMatch"
+references:
+  - type: data
+    title: "A long-term photographic dataset for individual identification of the Balearic wall lizard"
+    # TODO: complete the author list — only the DOI is recorded here.
+    authors:
+      - given-names: Roberto
+        family-names: Alcaraz
+    journal: "Scientific Data"
+    year: 2026
+    doi: "10.1038/s41597-026-07411-z"
+    notes: "Source of the example images bundled in data/"
+license: MIT
+keywords:
+  - re-identification
+  - open-set recognition
+  - image matching
+  - photo-identification
+  - biometric identification
+  - computer vision
+  - pattern recognition
+  - wildlife monitoring
+preferred-citation:
+  type: article
+  title: "ReMatch: Re-identification of patterned species in open-set scenarios by matching keypoints and lines"
+  authors:
+    - given-names: Roberto
+      family-names: Alcaraz
+    - given-names: Angel
+      family-names: Amores
+    - given-names: Alejandro
+      family-names: Villa
+    - given-names: Marta
+      family-names: Marcos
+    - given-names: Giacomo
+      family-names: Tavecchia
+    - given-names: "Jose Manuel"
+      family-names: Igual
+    - given-names: Andreu
+      family-names: Rotger
+  journal: "Pattern Recognition"
+  publisher:
+    name: Elsevier
+  year: 2026
+  # TODO before/after publication: fill in volume, article number and DOI once
+  # Elsevier assigns them, then update the BibTeX block in README.md to match.
+  # doi: 10.1016/j.patcog.XXXX.XXXXXX
