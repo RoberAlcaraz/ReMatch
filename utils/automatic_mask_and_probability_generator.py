@@ -1,10 +1,18 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
-# Changes were made to this file by Hiroaki Yamagiwa.
+#
+# Derived from segment_anything/automatic_mask_generator.py in
+# https://github.com/facebookresearch/segment-anything, licensed under the
+# Apache License, Version 2.0. A copy of that license is distributed with this
+# repository at licenses/Apache-2.0.txt; you may not use this file except in
+# compliance with it.
+#
+# NOTE: the root LICENSE file of this repository (MIT) does NOT apply to this
+# file. See THIRD_PARTY_NOTICES.md.
+#
+# Changes were made to this file by Hiroaki Yamagiwa
+# (https://github.com/ymgw55/segment-anything-edge-detection) and subsequently
+# by the ReMatch authors, to expose per-mask probability maps.
 
 from typing import Any, Dict, List, Optional, Tuple
 

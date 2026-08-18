@@ -4,7 +4,6 @@ import sys
 import random
 import glob
 
-# from groundingdino.util.inference import Model
 from segment_anything import sam_model_registry, SamPredictor
 
 import params.image_preparation_params as params
@@ -56,24 +55,27 @@ if __name__ == "__main__":
     if step_1a:
         logging.info("STEP 1a: Segmenting images...")
         os.makedirs(segmented_images_folder, exist_ok=True)
-        # Using GroundedSAM:
-        # if segmentation_model == "GroundedSAM":
-        #     logging.info("Using GroundedSAM for segmentation...")
-        #     # Building GroundingDINO inference model
-        #     grounding_dino_model = Model(
-        #         model_config_path=params.GROUNDING_DINO_CONFIG_PATH,
-        #         model_checkpoint_path=params.GROUNDING_DINO_CHECKPOINT_PATH,
-        #     )
-        #
-        #     # Building SAM Model and SAM Predictor
-        #     sam = sam_model_registry[params.SAM_ENCODER_VERSION](
-        #         checkpoint=params.SAM_CHECKPOINT_PATH
-        #     )
-        #     sam.to(device=params.DEVICE)
-        #     sam_predictor = SamPredictor(sam)
-        #     utils.GSAM_segmentation(grounding_dino_model, sam_predictor, classes)
+        if segmentation_model == "GroundedSAM":
+            logging.info("Using Grounded-SAM for segmentation...")
+            from groundingdino.util.inference import Model
 
-        if segmentation_model == "YOLO":
+            # GroundingDINO's Model defaults to device="cuda" and raises if no
+            # driver is present, so pass the device we actually resolved.
+            grounding_dino_model = Model(
+                model_config_path=params.GROUNDING_DINO_CONFIG_PATH,
+                model_checkpoint_path=params.GROUNDING_DINO_CHECKPOINT_PATH,
+                device=str(device),
+            )
+            sam = sam_model_registry[params.SAM_ENCODER_VERSION](
+                checkpoint=params.SAM_CHECKPOINT_PATH
+            )
+            sam.to(device=device)
+            sam_predictor = SamPredictor(sam)
+            utils.GSAM_segmentation(
+                grounding_dino_model, sam_predictor, params.CLASSES
+            )
+
+        elif segmentation_model == "YOLO":
             logging.info("Using YOLO for segmentation...")
             
             for individual in all_individuals:
