@@ -36,6 +36,27 @@ Matching by Sticking Points and Lines Together*, ICCV 2023.
 
 ---
 
+## Bundled data
+
+### `data/images/zebra_*/` and `data/new/zebra_demo/` — GZGC plains zebras
+
+| | |
+|---|---|
+| Upstream | https://lila.science/datasets/great-zebra-giraffe-id |
+| Source | Great Zebra and Giraffe Count and ID (GZGC), Wild Me |
+| License | [Community Data License Agreement – Permissive 1.0](https://cdla.dev/permissive-1-0/) — redistribution permitted |
+| Redistributed | Yes — 43 photographs of 11 individuals, a subset for `demo-3-new-species.ipynb` |
+
+Cite: Parham J, Crall J, Stewart C, Berger-Wolf T, Rubenstein DI. *Animal
+population censusing at scale with citizen science and photographic
+identification.* AAAI Spring Symposium — Technical Report, 2017.
+
+The lizard images in `data/images-pattern/lizard_*/` and
+`data/new/lizard_demo-pattern/` come from BalearicLizard, released by the
+authors of this repository; see [`data/README.md`](data/README.md).
+
+---
+
 ## Model weights (downloaded at runtime, not redistributed)
 
 | Weights | Source | License |

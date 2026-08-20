@@ -2,7 +2,7 @@
 
 **Re-identification of patterned species in open-set scenarios by matching keypoints and lines**
 
-[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ReMatch identifies individual animals from photographs of their natural patterns —
@@ -53,19 +53,29 @@ sharks.
 
 ## Try it first
 
-Two notebooks run the method end to end on a small dataset bundled in
-[`data/`](data/): 12 Balearic wall lizards in the gallery, and a query batch of 20
-photographs of which **seven show animals the model has never seen**.
+Four notebooks run the method end to end on small datasets bundled in
+[`data/`](data/). `demo-1` and `demo-2` use 12 Balearic wall lizards in the
+gallery and a query batch of 20 photographs, **seven of which show animals the
+model has never seen**. `demo-3` repeats the whole thing on a different species —
+8 plains zebras — to show what adapting to your own animal actually involves, and
+`demo-0` shows what happens to a photograph before any of it starts.
 
 | | |
 |---|---|
+| [`demo-0-image-preparation.ipynb`](demo-0-image-preparation.ipynb) | How a raw photograph becomes something matchable — both routes side by side: lizard (YOLO, then pattern extraction) and zebra (Grounded-SAM, no pattern step) |
 | [`demo-1-training.ipynb`](demo-1-training.ipynb) | Match every pair, train the classifier, meta-model and threshold |
 | [`demo-2-query.ipynb`](demo-2-query.ipynb) | Identify the new batch, reject the unseen animals, score the result |
+| [`demo-3-new-species.ipynb`](demo-3-new-species.ipynb) | **Start here for your own data.** A second species (plains zebras) end to end, segmented with Grounded-SAM instead of YOLO — or with no segmentation at all |
 
 ```bash
-pip install -r requirements.txt
-jupyter lab demo-1-training.ipynb
+uv venv --python 3.11
+uv pip install -r requirements.txt
+uv run jupyter lab
 ```
+
+Matching every pair of the bundled 48 images is 1 128 comparisons: about four
+minutes on a GPU and twenty on a CPU. See [Installation](#installation) if you
+do not have `uv`.
 
 They read their configuration from `params/`, their helpers from `utils/`, and
 write into `results/` — the same paths the pipeline scripts use, so the demo *is*
@@ -114,27 +124,83 @@ changes.
 
 ## Installation
 
+ReMatch is installed with [uv](https://docs.astral.sh/uv/), a single
+self-contained binary that manages both the Python interpreter and the
+packages. You do **not** need conda, and you do not need Python already
+installed — uv fetches the interpreter itself.
+
 ```bash
+# Install uv (macOS / Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows PowerShell:
+#   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
 git clone https://github.com/RoberAlcaraz/ReMatch.git
 cd ReMatch
-conda create -n rematch python=3.13
-conda activate rematch
-pip install -r requirements.txt
+
+uv venv --python 3.11          # creates .venv, downloading Python 3.11 if needed
+uv pip install -r requirements.txt
 ```
 
 Two pins are not interchangeable with their obvious alternatives:
-**`opencv-contrib-python`** (not `opencv-python`) because pattern extraction calls
-`cv2.ximgproc`, and **`scikit-learn==1.7.2`** because trained models are stored as
-scikit-learn pickles.
+**`opencv-contrib-python`** (not `opencv-python`) because pattern extraction
+calls `cv2.ximgproc`, and **`scikit-learn==1.7.2`** because trained models are
+stored as scikit-learn pickles.
 
-Grounded-SAM segmentation additionally needs GroundingDINO, which is not on PyPI:
+### Segmentation
+
+`requirements.txt` installs everything, segmentation included. One exception:
+Grounded-SAM also needs GroundingDINO, which is not on PyPI and so cannot be
+pinned there. Install it only if you set `SEGMENTATION_MODEL = "GroundedSAM"`:
 
 ```bash
-pip install git+https://github.com/IDEA-Research/GroundingDINO.git
+uv pip install --no-build-isolation \
+  "git+https://github.com/IDEA-Research/GroundingDINO.git" "transformers<5"
 ```
 
+Both parts of that command matter. **`--no-build-isolation`**: GroundingDINO's
+`setup.py` imports `torch` at build time without declaring it as a build
+dependency, so in an isolated build environment it fails with
+`ModuleNotFoundError: No module named 'torch'`; the flag lets it see the torch
+you already have. **`transformers<5`**: GroundingDINO wraps BERT through
+`bert_model.get_head_mask`, which transformers 5 removed, so an unpinned install
+imports fine and then dies with
+`AttributeError: 'BertModel' object has no attribute 'get_head_mask'` the moment
+you load the model.
+
+No CUDA toolchain is needed — without one GroundingDINO falls back to a
+pure-PyTorch attention kernel and runs on CPU, at roughly 5 s per photograph.
+
+The demo notebooks ship pre-extracted pattern crops, so neither the
+segmentation packages nor GroundingDINO are needed to try ReMatch out.
+
+### Pattern extraction (STEP_1B) and super-resolution
+
+Before SAM segments the individual scales, the pipeline upscales the image 2x.
+The published version used ISR's `RDN(weights="noise-cancel")`, which denoised
+as it upscaled. `REMATCH_UPSCALER` selects the model: `edsr` (the default, and
+the only one needing no extra install), `rdn`, `bicubic` or `none`.
+
+`rdn` reproduces the published crops exactly, but `ISR` pins a TensorFlow too
+old to install. The pin is the only stale part, so skip it:
+
+```bash
+uv pip install --no-deps ISR
+uv pip install "tensorflow>=2.16"
+```
+
+### Hardware
+
 A CUDA-capable GPU is strongly recommended. Everything falls back to CPU, but
-matching every pair of a real database is impractically slow without one.
+matching every pair of a real database is slow without one — on CPU, budget
+roughly **1 s per pair** after the one-off wireframe pass, and remember the
+pair count grows quadratically: 48 images is 1 128 pairs, 500 images is
+124 750.
+
+Memory is dominated by the wireframe cache, at roughly **3 MB per image**
+(the point–line associativity matrix is quadratic in the number of keypoints).
+The matching step loads the whole cache at once, so budget about 1.5 GB per
+500 images, plus ~1 GB for the models themselves.
 
 ### Model weights
 
@@ -202,7 +268,10 @@ are resumable, so rerunning skips work already done.
 # 3. Aggregate matches into the pair-level feature table.
 python scripts/P3-feature_aggregation.py
 ```
-Writes `results/processed_matches.parquet`.
+Writes `results/processed_matches.parquet`. This step also drops near-duplicate
+photographs — pairs matching above `900` keypoints are almost certainly the same
+image twice, and one copy of each is removed. `demo-1` and `demo-3` show you
+which ones, side by side, before they go.
 
 ```bash
 # 4. Train the classifier, meta-model and threshold.
@@ -274,13 +343,20 @@ Everything lives in two files:
 
 - **`params/params.py`** — GlueStick and wireframe settings, `IMAGE_HEIGHT_RESIZE`
   (670 px; the models are calibrated against it, so changing it means retraining),
-  and every data and result path.
+  `RANDOM_SEED`, and every data and result path.
 - **`params/image_preparation_params.py`** — `SEGMENTATION_MODEL`
   (`"GroundedSAM"` or `"YOLO"`), `CLASSES`, detection thresholds, and the step
   toggles `STEP_1A` (segmentation) and `STEP_1B` (pattern extraction).
 
 `NEW_IMAGES_NAME` is read from the environment and selects which batch the `Q`
 scripts operate on.
+
+**`STEP_1B` decides what the matching stage reads.** With it on, pattern
+extraction writes `data/images-pattern/` and matching uses that — the lizard
+route. With it off nothing is written there and matching runs on
+`data/images-segmented/` directly, which is what zebras, seals and whale sharks
+do. `params.MATCHING_IMAGES_FOLDER` resolves to whichever applies; the scripts
+read it rather than hardcoding either path.
 
 ---
 
@@ -298,7 +374,7 @@ lines. For SLURM:
 #SBATCH --mem=64G
 #SBATCH --time=12:00:00
 
-conda activate rematch
+source .venv/bin/activate
 export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
 export NEW_IMAGES_NAME="${1:-Batch1}"   # only needed for the Q scripts
 
