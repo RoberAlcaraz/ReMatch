@@ -299,6 +299,28 @@ def build_grounded_sam(dev=None, dino_config=None, dino_weights=None,
     from segment_anything import sam_model_registry, SamPredictor
 
     dev = dev or device()
+
+    # Neither model downloads its own weights, unlike GlueStick and SuperPoint,
+    # so say which file is missing and where it comes from rather than letting
+    # a bare FileNotFoundError surface from inside the loader.
+    needed = {
+        dino_config or P.GROUNDING_DINO_CONFIG_PATH:
+            "ships with this repository - restore it from git",
+        dino_weights or P.GROUNDING_DINO_CHECKPOINT_PATH:
+            "https://github.com/IDEA-Research/GroundingDINO#luggage-checkpoints",
+        sam_weights or P.SAM_CHECKPOINT_PATH:
+            "https://github.com/facebookresearch/segment-anything#model-checkpoints",
+    }
+    absent = [f"  {p}  <-  {where}" for p, where in needed.items() if not Path(p).exists()]
+    if absent:
+        raise FileNotFoundError(
+            "Grounded-SAM needs weights that are not in the repository:\n"
+            + "\n".join(absent)
+            + "\n\nIf your images are already segmented or cropped, you do not need "
+              "any of this:\nset SEGMENT = False and the notebook will use them as "
+              "they are."
+        )
+
     dino = Model(
         model_config_path=dino_config or P.GROUNDING_DINO_CONFIG_PATH,
         model_checkpoint_path=dino_weights or P.GROUNDING_DINO_CHECKPOINT_PATH,
