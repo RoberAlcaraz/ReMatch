@@ -1,22 +1,27 @@
 # ReMatch — runtime dependencies
-# Versions pinned to the environment used for the experiments reported in the paper
-# (Python 3.13.9, CUDA 12.x, NVIDIA RTX 6000 Ada).
+#
+# Versions pinned to the environment used for the experiments reported in the
+# paper (CUDA 12.x, NVIDIA RTX 6000 Ada).
 # Use `>=` instead of `==` if you need to relax them for your platform.
+#
+#     uv venv --python 3.11
+#     uv pip install -r requirements.txt
+#
+# PYTHON VERSION: use 3.11. pytlsd ships prebuilt wheels only up to CPython
+# 3.11, so on 3.11 nothing has to be compiled. On 3.12/3.13 pip falls back to
+# building it from source, which needs CMake and a C++ compiler — see the
+# README.
 
 # --- Deep learning ---
 torch==2.9.1
 torchvision==0.24.1
-ultralytics==8.3.88            # YOLO ROI segmentation
-# SAM (pattern extraction). Official install is from source; the PyPI mirror
-# `segment-anything==1.0` exposes the same API if you prefer a plain pip install.
-segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@dca509f
 
 # --- Image processing ---
 # opencv-contrib-python (NOT opencv-python) is required: the pattern-extraction
 # step uses cv2.ximgproc.createStructuredEdgeDetection, which ships only in contrib.
 opencv-contrib-python==4.13.0.92
 pillow==12.0.0
-pytlsd==0.0.5                  # LSD line segment detector used by GlueStick
+pytlsd==0.0.2                  # LSD line segment detector used by GlueStick
 
 # --- Scientific stack ---
 numpy==2.2.6
@@ -32,10 +37,29 @@ xgboost==3.1.2
 catboost==1.2.8
 joblib==1.5.2                  # (de)serialisation of the released models
 
-# --- Optional: Grounded-SAM segmentation ---
-# GroundingDINO is not on PyPI. Needed only for SEGMENTATION_MODEL="GroundedSAM":
-#     pip install git+https://github.com/IDEA-Research/GroundingDINO.git
-supervision==0.27.0            # detection containers used by the Grounded-SAM path
+# --- Segmentation (scripts/P1 and scripts/Q1 only) ---
+# The demo notebooks ship pre-extracted pattern crops and never touch these,
+# and neither do P2-P4 or Q2-Q4. They are here so that one file installs
+# everything; drop these three lines if you only ever match and never segment.
+ultralytics>=8.3.120           # YOLO ROI segmentation. 8.3.88 caps numpy at
+                               # <=2.1.1 and cannot coexist with the pin above.
+super-image==0.2.0             # EDSR x2, the 2x upscale before SAM generates
+                               # scale masks. Replaces ISR, whose every release
+                               # pins tensorflow 1.13/2.0 - no wheels for any
+                               # Python this project supports.
+segment-anything==1.0          # SAM (pattern extraction). PyPI mirror of the
+                               # official repo; same API, no git clone needed.
+supervision==0.27.0            # not imported by ReMatch, but GroundingDINO's
+                               # Model returns supervision.Detections objects.
+#
+# Grounded-SAM additionally needs GroundingDINO, which is not on PyPI and so
+# cannot be pinned here. Needed only for SEGMENTATION_MODEL="GroundedSAM":
+#     uv pip install "git+https://github.com/IDEA-Research/GroundingDINO.git"
+
+# --- Notebooks ---
+# The two demos are the advertised entry point, so the notebook server is a
+# runtime dependency, not an optional extra.
+jupyterlab==4.5.2
 
 # --- Utilities ---
 omegaconf==2.2.3
