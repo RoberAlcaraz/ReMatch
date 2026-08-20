@@ -1,0 +1,69 @@
+{
+  "gallery_individuals": [
+    "zebra_01_036",
+    "zebra_01_165",
+    "zebra_01_230",
+    "zebra_01_363",
+    "zebra_01_460",
+    "zebra_01_579",
+    "zebra_01_661",
+    "zebra_01_679"
+  ],
+  "query": [
+    {
+      "image": "img-0000508.jpg",
+      "true_identity": "zebra_01_036",
+      "in_gallery": true
+    },
+    {
+      "image": "img-0000321.jpg",
+      "true_identity": "zebra_01_165",
+      "in_gallery": true
+    },
+    {
+      "image": "img-0000681.jpg",
+      "true_identity": "zebra_01_230",
+      "in_gallery": true
+    },
+    {
+      "image": "img-0000473.jpg",
+      "true_identity": "zebra_01_363",
+      "in_gallery": true
+    },
+    {
+      "image": "img-0000144.jpg",
+      "true_identity": "zebra_01_460",
+      "in_gallery": true
+    },
+    {
+      "image": "img-0000713.jpg",
+      "true_identity": "zebra_01_805",
+      "in_gallery": false
+    },
+    {
+      "image": "img-0000714.jpg",
+      "true_identity": "zebra_01_805",
+      "in_gallery": false
+    },
+    {
+      "image": "img-0000366.jpg",
+      "true_identity": "zebra_02_149",
+      "in_gallery": false
+    },
+    {
+      "image": "img-0000368.jpg",
+      "true_identity": "zebra_02_149",
+      "in_gallery": false
+    },
+    {
+      "image": "img-0000325.jpg",
+      "true_identity": "zebra_02_161",
+      "in_gallery": false
+    },
+    {
+      "image": "img-0000326.jpg",
+      "true_identity": "zebra_02_161",
+      "in_gallery": false
+    }
+  ]
+}
