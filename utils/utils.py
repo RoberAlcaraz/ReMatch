@@ -18,6 +18,29 @@ from gluestick.models.two_view_pipeline_precomputed_wireframe import (
 )
 
 
+def set_seed(seed=0):
+    """Make a run reproducible.
+
+    Two steps of the pipeline draw random numbers. SuperPoint runs with
+    ``force_num_keypoints``, so when it detects fewer than
+    ``max_num_keypoints`` it pads the rest with uniformly random points; on the
+    bundled lizard images that is about 16% of every image's keypoints. And the
+    Grounded-SAM step samples the centre of each mask at random to decide
+    whether SAM returned the animal or the background.
+
+    Left unseeded, two runs of the same data select different pair-level
+    classifiers and land on visibly different thresholds. Seeding does not
+    change the method, it just pins which draw you get.
+    """
+    import random
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
 def read_transparent_img(image_path):
     """Read a segmented or pattern image as grayscale, with the background black.
 
@@ -140,7 +163,11 @@ def compute_wireframe(
         # unique_ids = pd.read_csv(new_unique_image_ids_path, header=None, names=["img"])
         # unique_ids = unique_ids["img"].to_list()
         # print(new_pattern_images_folder)
-        img_paths = sorted(glob.glob(os.path.join(new_pattern_images_folder, "*.png")))
+        img_paths = sorted(
+            glob.glob(os.path.join(new_pattern_images_folder, "*.png"))
+            + glob.glob(os.path.join(new_pattern_images_folder, "*.jpg"))
+            + glob.glob(os.path.join(new_pattern_images_folder, "*.JPG"))
+        )
         # Ids are stored relative to the batch's parent directory (data/new),
         # so they read as "<batch>-pattern/<image>.png".
         new_images_root = os.path.dirname(new_pattern_images_folder.rstrip(os.sep))
@@ -182,7 +209,12 @@ def compute_wireframe(
                     continue
 
                 # Prepare data dictionary for passing into models
-                image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+                # read_transparent_img, not cv2.IMREAD_GRAYSCALE: segmented
+                # images carry their mask in the alpha channel, and a plain
+                # grayscale read discards it - leaving the background in the
+                # image and undoing the segmentation. Only matters for RGBA
+                # inputs, which is every species that skips pattern extraction.
+                image = read_transparent_img(img_path)
                 image = resize_image(image, height=image_height_resize)
                 image = enhance_contrast(image)
                 img_tensor = numpy_image_to_torch(image).to(device)[None]
@@ -467,7 +499,9 @@ def remove_duplicate_images(matches: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Cleaned DataFrame with duplicates removed.
     """
     print("Removing duplicate images...")
-    same_images = matches[matches["num_nonzero_points"] > 900]
+    from params.params import DUPLICATE_POINT_THRESHOLD
+
+    same_images = matches[matches["num_nonzero_points"] > DUPLICATE_POINT_THRESHOLD]
     print(same_images)
     same_images_index = same_images.index
     same_images_path = same_images.img1_full.unique()

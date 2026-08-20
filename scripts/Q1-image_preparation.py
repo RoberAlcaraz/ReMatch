@@ -8,7 +8,9 @@ import glob
 from segment_anything import sam_model_registry, SamPredictor
 
 import params.image_preparation_params as params
+import params.params as global_params
 import utils.image_preparation_utils as utils
+from utils.utils import set_seed
 
 
 # Configure logging to output to stdout
@@ -33,6 +35,8 @@ if __name__ == "__main__":
     # and model configurations.
     # Ensure these paths are correctly set in the params file.
     # If you need to change the paths, do it in params/image_preparation_params.py
+    set_seed(global_params.RANDOM_SEED)
+
     device = params.DEVICE
 
     raw_images_folder = params.NEW_RAW_IMAGES_FOLDER

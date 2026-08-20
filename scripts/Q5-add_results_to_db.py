@@ -225,8 +225,10 @@ if __name__ == "__main__":
     images_folder = params.RAW_IMAGES_FOLDER
     new_segmented_images_folder = params.NEW_SEGMENTED_IMAGES_FOLDER
     segmented_images_folder = params.SEGMENTED_IMAGES_FOLDER
-    new_pattern_images_folder = params.NEW_PATTERN_IMAGES_FOLDER
-    pattern_images_folder = params.PATTERN_IMAGES_FOLDER
+    # With STEP_1B off these are the segmented folders, not the pattern ones -
+    # the batch has to be merged into whatever the database actually matches on.
+    new_pattern_images_folder = params.NEW_MATCHING_IMAGES_FOLDER
+    pattern_images_folder = params.MATCHING_IMAGES_FOLDER
     unique_image_ids_path = params.UNIQUE_IMAGE_IDS_PATH
     new_unique_image_ids_path = params.NEW_UNIQUE_IMAGE_IDS_PATH
     wireframe_results_path = params.WIREFRAME_RESULTS_PATH

@@ -20,6 +20,8 @@ if __name__ == "__main__":
     logging.info("------- Running pattern_matching.py...  -------")
     logging.info("-----------------------------------------------")
 
+    utils.set_seed(params.RANDOM_SEED)
+
     device = params.DEVICE
     wireframe_conf = params.WIREFRAME_CONF
     image_height_resize = params.IMAGE_HEIGHT_RESIZE
@@ -36,7 +38,7 @@ if __name__ == "__main__":
         wireframe_results_path,
         wireframe_conf,
         image_height_resize,
-        pattern_images_folder=params.PATTERN_IMAGES_FOLDER,
+        pattern_images_folder=params.MATCHING_IMAGES_FOLDER,
     )
 
     utils.pattern_matching(

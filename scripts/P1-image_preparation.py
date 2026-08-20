@@ -7,7 +7,9 @@ import glob
 from segment_anything import sam_model_registry, SamPredictor
 
 import params.image_preparation_params as params
+import params.params as global_params
 import utils.image_preparation_utils as utils
+from utils.utils import set_seed
 
 
 # Configure logging to output to stdout
@@ -32,6 +34,8 @@ if __name__ == "__main__":
     # and model configurations.
     # Ensure these paths are correctly set in the params file.
     # If you need to change the paths, do it in params/image_preparation_params.py
+    set_seed(global_params.RANDOM_SEED)
+
     device = params.DEVICE
 
     raw_images_folder = params.RAW_IMAGES_FOLDER
@@ -149,16 +153,33 @@ if __name__ == "__main__":
     utils.save_metadata(train_folder, test_folder)
     """
 
-    # Save img paths to a text file
-    print(pattern_images_folder)
-    pattern_img_paths = sorted(glob.glob(os.path.join(pattern_images_folder, "*/*.png")), key=lambda x: os.path.basename(x))
-    with open(
-        os.path.join(results_path, f"unique_ids.txt"), "w"
-    ) as f:
-        for path in pattern_img_paths:
-            print(path)
-            path = path.replace("data/images-pattern/", "")
-            f.write(f"{path}\n")
+    # Record what the matching stage should read, as ids relative to that folder.
+    # With STEP_1B on that is the pattern crops; with it off nothing is ever
+    # written to images-pattern/ and matching runs on the segmented ROI instead.
+    matching_images_folder = pattern_images_folder if step_1b else segmented_images_folder
+
+    img_paths = sorted(
+        glob.glob(os.path.join(matching_images_folder, "*", "*.png"))
+        + glob.glob(os.path.join(matching_images_folder, "*", "*.jpg"))
+        + glob.glob(os.path.join(matching_images_folder, "*", "*.JPG")),
+        key=lambda x: os.path.basename(x),
+    )
+    if not img_paths:
+        raise SystemExit(
+            f"No images found in {matching_images_folder}. "
+            + (
+                "STEP_1B is on, so pattern extraction should have written there."
+                if step_1b
+                else "STEP_1B is off, so segmentation should have written there."
+            )
+        )
+
+    logging.info(
+        f"Matching will run on {len(img_paths)} images in {matching_images_folder}"
+    )
+    with open(os.path.join(results_path, "unique_ids.txt"), "w") as f:
+        for path in img_paths:
+            f.write(os.path.relpath(path, matching_images_folder) + "\n")
 
     logging.info("-----------------------------------------------")
     logging.info("-------- IMAGE PREPARATION finished! ----------")

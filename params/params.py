@@ -1,12 +1,24 @@
 import os
 import torch
 from gluestick import GLUESTICK_ROOT
+from params.image_preparation_params import STEP_1B
 
 NEW_IMAGES_NAME = os.environ["NEW_IMAGES_NAME"] if "NEW_IMAGES_NAME" in os.environ else "Batch1"  # Folder inside data/new with new images
 
 ###########################################################
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Seed for the random draws inside the pipeline (SuperPoint's keypoint padding,
+# the Grounded-SAM mask-centre check). Set to None to leave them unseeded.
+RANDOM_SEED = 0
+
+# Two photographs matching above this many keypoints are treated as the same
+# image in the gallery twice, and one copy is dropped. Two genuinely different
+# photographs of one animal share a few hundred points at most, so the gap is
+# wide - but it is a heuristic, and the demo notebooks show you every pair it
+# flags so you can judge before it acts.
+DUPLICATE_POINT_THRESHOLD = 900
 
 # Models
 SAM_ENCODER_VERSION = "vit_h"
@@ -51,6 +63,14 @@ DATABASE_PATH = os.path.join(
 RAW_IMAGES_FOLDER = os.path.join("data", "images")
 SEGMENTED_IMAGES_FOLDER = os.path.join("data", "images-segmented")
 PATTERN_IMAGES_FOLDER = os.path.join("data", "images-pattern")
+
+# Pattern extraction (STEP_1B in params/image_preparation_params.py) is
+# optional. Lizards need it: the identity is in the ventral scale mosaic, so a
+# second pass isolates that texture into images-pattern/. Zebras, seals and
+# whale sharks do not — the stripes, rings and spots *are* the pattern, and
+# matching runs on the segmented ROI directly. MATCHING_IMAGES_FOLDER is
+# whichever of the two the rest of the pipeline should read.
+MATCHING_IMAGES_FOLDER = PATTERN_IMAGES_FOLDER if STEP_1B else SEGMENTED_IMAGES_FOLDER
 DATABASES_FOLDER = "databases"
 RESULTS_FOLDER = "results"
 UNIQUE_IMAGE_IDS_PATH = os.path.join(RESULTS_FOLDER, "unique_ids.txt")
@@ -69,6 +89,9 @@ NEW_SEGMENTED_IMAGES_FOLDER = os.path.join(
     "data", "new", f"{NEW_IMAGES_NAME}-segmented"
 )
 NEW_PATTERN_IMAGES_FOLDER = os.path.join("data", "new", f"{NEW_IMAGES_NAME}-pattern")
+NEW_MATCHING_IMAGES_FOLDER = (
+    NEW_PATTERN_IMAGES_FOLDER if STEP_1B else NEW_SEGMENTED_IMAGES_FOLDER
+)
 NEW_UNIQUE_IMAGE_IDS_PATH = os.path.join(
     RESULTS_FOLDER, f"unique_ids_{NEW_IMAGES_NAME}.txt"
 )

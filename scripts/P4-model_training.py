@@ -1,9 +1,18 @@
-import pandas as pd
-import numpy as np
-import pandas as pd
 import joblib
 import logging
 import sys
+
+import numpy as np
+import pandas as pd
+
+# Imported before xgboost on purpose. On macOS the xgboost wheel links
+# libomp.dylib by @rpath and finds it only if some other library has already
+# loaded one; without Homebrew's libomp installed, importing xgboost first dies
+# with "Library not loaded: @rpath/libomp.dylib". params.params pulls in torch,
+# which ships its own copy, so this import order is what keeps P4 working on a
+# stock Mac. On Linux and Windows the order makes no difference.
+import params.params as params
+import utils.utils as utils
 
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
@@ -13,9 +22,6 @@ from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report
-
-import params.params as params
-import utils.utils as utils
 
 # Configure logging to output to stdout
 logging.basicConfig(
@@ -28,40 +34,60 @@ logging.basicConfig(
 )
 
 
-# Assuming matches is your DataFrame with columns 'img1_full' and 'img2_full'
-def train_val_split(matches, n_by_group=40, splits=10):
-    img1 = matches.img1_full
-    img2 = matches.img2_full
-    imgs = pd.Series(pd.concat([img1, img2]).unique())
-    print("Total unique images:", len(imgs))
+def train_val_split(matches, train_frac=0.70, val_frac=0.30, splits=5, seed=42):
+    """Image-disjoint rollout splits, sized as fractions of the dataset.
 
-    # Shuffle images with reproducibility.
-    np.random.seed(42)
-    imgs_shuffled = imgs.sample(frac=1, random_state=42).reset_index(drop=True)
+    Split 1 is a plain **70/30** train/validation partition. Every later split
+    folds one chunk of the validation pool into training and validates on what
+    is left of it, so the training database grows from one split to the next the
+    way it does in the field, where a re-identification catalogue is built up
+    batch by batch and each new batch is identified against everything already
+    in it.
 
-    # Create 5 sets of 15 images for validation splits.
-    val_splits = imgs_shuffled.iloc[: n_by_group * splits].values.reshape(
-        splits, n_by_group
-    )
-    print("Each val split has:", val_splits.shape[1], "images")
+    Splitting on *images* rather than on pairs matters: a single photograph
+    appears in many pairs, so a pair-level split would put near-copies of the
+    same comparison on both sides and inflate the score.
 
-    # Base training images: those not used in any validation split.
-    base_train = imgs_shuffled.iloc[n_by_group * splits :].values
-    print("Base training images:", len(base_train))
+    Returns (train_splits, val_splits), each a list of image-name arrays with
+    one entry per split.
+    """
+    imgs = pd.Series(pd.concat([matches.img1_full, matches.img2_full]).unique())
+    n = len(imgs)
 
-    # Build cumulative training splits.
-    train_splits = [None] * splits
-    train_splits[0] = base_train.copy()  # Split 1: just the base training set
-    for i in range(1, splits):
-        # For each subsequent split, add the previous validation split cumulatively.
-        train_splits[i] = np.concatenate([train_splits[i - 1], val_splits[i - 1]])
-        print(
-            f"Split {i+1} - Train: {len(train_splits[i])} images, Val: {len(val_splits[i])} images"
+    total = train_frac + val_frac
+    if abs(total - 1.0) > 1e-6:
+        raise ValueError(f"train and val fractions must sum to 1, got {total}")
+    if n < 6:
+        raise ValueError(
+            f"Only {n} images with matches - too few to split. Use the demo "
+            "notebooks, which size their folds for small galleries."
         )
+
+    shuffled = imgs.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    n_val = max(1, round(n * val_frac))
+    base_train = shuffled.iloc[n_val:].values
+    val_pool = shuffled.iloc[:n_val].values
+
+    # One chunk per rollout step; never more chunks than images to give out.
+    splits = max(1, min(splits, len(val_pool)))
+    chunks = np.array_split(val_pool, splits)
+
+    print(f"Total unique images: {n}")
+    train_splits, val_splits = [], []
+    for i in range(splits):
+        train_i = np.concatenate([base_train, *chunks[:i]]) if i else base_train
+        val_i = np.concatenate(chunks[i:])
+        train_splits.append(train_i)
+        val_splits.append(val_i)
+        print(
+            f"Split {i+1} - Train: {len(train_i)} images ({len(train_i)/n:.0%}), "
+            f"Val: {len(val_i)} images ({len(val_i)/n:.0%})"
+        )
+
     return train_splits, val_splits
 
 
-# Define the features to use.
 def train(matches, train_splits, val_splits):
     features = [
         "num_nonzero_points",
@@ -323,8 +349,9 @@ if __name__ == "__main__":
     logging.info("---------- Running model_training.py ----------")
     logging.info("-----------------------------------------------")
 
-    # Read the file results/unique_ids.txt
-    unique_image_ids = utils.read_unique_images_ids(params.UNIQUE_IMAGE_IDS_PATH)
+    # Everything P4 needs is in the parquet. It used to also read
+    # results/unique_ids.txt and never use it, which made the script fail for
+    # anyone who produced the matches from a notebook rather than from P1.
     matches = pd.read_parquet(params.PROCESSED_MATCHES_FILE_PATH)
 
     print("Splitting images into training and validation sets...")
