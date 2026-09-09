@@ -4,6 +4,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22673005.svg)](https://doi.org/10.5281/zenodo.22673005)
 
 ReMatch identifies individual animals from photographs of their natural patterns —
 lizard scale mosaics, zebra stripes, seal pelage, shark spots, human fingerprints
@@ -434,6 +435,28 @@ ReMatch/
   doi     = {10.1016/j.patcog.2026.114744}
 }
 ```
+
+To cite the software itself — a specific version of this code, rather than the
+method — use the Zenodo archive:
+
+```bibtex
+@software{alcaraz2026rematch_software,
+  title     = {{ReMatch}: Re-identification of patterned species in open-set
+               scenarios by matching keypoints and lines},
+  author    = {Alcaraz, Roberto and Amores, Angel and Villa, Alejandro and
+               Marcos, Marta and Tavecchia, Giacomo and Igual, Jos{\'e} Manuel and
+               Rotger, Andreu},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.22673005},
+  url       = {https://doi.org/10.5281/zenodo.22673005}
+}
+```
+
+That DOI always resolves to the latest release. Every release also gets its own
+DOI, listed on the Zenodo record — cite that one instead if reproducibility
+depends on the exact version you ran; `v1.0.0`, the version published alongside
+the paper, is [10.5281/zenodo.22673006](https://doi.org/10.5281/zenodo.22673006).
 
 Please also cite GlueStick, on which the matching stage is built — see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
