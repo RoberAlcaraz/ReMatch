@@ -63,6 +63,10 @@ if __name__ == "__main__":
             logging.info("Using Grounded-SAM for segmentation...")
             from groundingdino.util.inference import Model
 
+            # Survives an install with no CUDA toolchain, on a machine that has
+            # a GPU. See utils.image_preparation_utils.
+            utils.ensure_grounding_dino_ops()
+
             # GroundingDINO's Model defaults to device="cuda" and raises if no
             # driver is present, so pass the device we actually resolved.
             grounding_dino_model = Model(

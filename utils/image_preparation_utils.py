@@ -30,6 +30,68 @@ logging.basicConfig(
 
 
 # Grounded Segment Anything Model (GSAM) utility functions
+
+
+# GroundingDINO ships its deformable attention twice: a compiled CUDA/C++
+# extension (`groundingdino._C`) and a pure-PyTorch equivalent. Installing from
+# git builds the extension only when a matching CUDA toolchain is present, and
+# upstream then dispatches on where the *tensors* live rather than on what was
+# actually built:
+#
+#     if torch.cuda.is_available() and value.is_cuda:
+#         output = MultiScaleDeformableAttnFunction.apply(...)   # needs _C
+#     else:
+#         output = multi_scale_deformable_attn_pytorch(...)
+#
+# So a missing extension is harmless on a machine without a GPU and fatal on one
+# with it: the model goes to CUDA, the first branch is taken, and the forward
+# pass dies with `NameError: name '_C' is not defined` — after printing only
+# `Failed to load custom C++ ops. Running on CPU mode Only!` as a warning at
+# import time, which reads like a promise that it will cope.
+def ensure_grounding_dino_ops():
+    """Make GroundingDINO usable on a GPU when its C++ ops were never built.
+
+    Point `MultiScaleDeformableAttnFunction.apply` at the pure-PyTorch kernel
+    when the extension is missing. That kernel runs on CUDA tensors perfectly
+    well — it is `F.grid_sample` rather than a fused op, so somewhat slower and
+    a little hungrier on memory, but numerically the same thing.
+
+    Returns True if the compiled extension is present and nothing was patched.
+    Call it once before building the model; safe to call repeatedly.
+    """
+    from groundingdino.models.GroundingDINO import ms_deform_attn as msda
+
+    try:
+        from groundingdino import _C  # noqa: F401
+        return True
+    # A built-but-unloadable extension raises OSError on Windows (a missing
+    # CUDA DLL), not ImportError, so do not narrow this.
+    except Exception:
+        pass
+
+    fn = msda.MultiScaleDeformableAttnFunction
+    if getattr(fn, "_rematch_pytorch_fallback", False):
+        return False
+
+    def apply(value, spatial_shapes, level_start_index, sampling_locations,
+              attention_weights, im2col_step):
+        # `level_start_index` and `im2col_step` only mean anything to the fused
+        # kernel; the PyTorch one slices `value` by `spatial_shapes` itself.
+        return msda.multi_scale_deformable_attn_pytorch(
+            value, spatial_shapes, sampling_locations, attention_weights
+        )
+
+    fn.apply = apply
+    fn._rematch_pytorch_fallback = True
+    logging.info(
+        "GroundingDINO's compiled C++ ops are not installed; using its "
+        "pure-PyTorch deformable attention instead (same masks, somewhat "
+        "slower). Ignore the 'Running on CPU mode Only!' warning above: "
+        "the GPU is still used for everything else."
+    )
+    return False
+
+
 # Prompting SAM with detected boxes
 def segment(sam_predictor, image, xyxy, invert=False):
     sam_predictor.set_image(image)

@@ -29,8 +29,8 @@ sharks.
 
 > **Paper** — Alcaraz, Amores, Villa, Marcos, Tavecchia, Igual & Rotger,
 > *ReMatch: Re-identification of patterned species in open-set scenarios by
-> matching keypoints and lines*, **Pattern Recognition** (Elsevier), 2026.
-> Accepted, in press — DOI to follow.
+> matching keypoints and lines*, **Pattern Recognition** 114744 (2026).
+> [doi:10.1016/j.patcog.2026.114744](https://doi.org/10.1016/j.patcog.2026.114744)
 
 ---
 
@@ -168,8 +168,19 @@ imports fine and then dies with
 `AttributeError: 'BertModel' object has no attribute 'get_head_mask'` the moment
 you load the model.
 
-No CUDA toolchain is needed — without one GroundingDINO falls back to a
-pure-PyTorch attention kernel and runs on CPU, at roughly 5 s per photograph.
+No CUDA toolchain is needed, and `Failed to load custom C++ ops. Running on
+CPU mode Only!` at import time is expected: without a toolchain `pip` cannot
+build GroundingDINO's compiled attention kernel. ReMatch notices and substitutes
+GroundingDINO's own pure-PyTorch one, which runs on a GPU as happily as on a
+CPU — a little slower than the fused op, and the same masks. Do not take that
+warning at its word and force `DEVICE = "cpu"`: on CPU, SAM's ViT-H encoder
+makes segmentation about 5 s per photograph.
+
+Left to itself GroundingDINO ignores what was built and dispatches on where the
+tensors are, so on a machine that *has* a GPU it takes the compiled path anyway
+and dies mid-forward-pass with `NameError: name '_C' is not defined`
+([#2](https://github.com/RoberAlcaraz/ReMatch/issues/2)). If you hit that, you
+are on a version of this repository from before the fix — `git pull`.
 
 The demo notebooks ship pre-extracted pattern crops, so neither the
 segmentation packages nor GroundingDINO are needed to try ReMatch out.
@@ -416,7 +427,9 @@ ReMatch/
              Rotger, Andreu},
   journal = {Pattern Recognition},
   year    = {2026},
-  note    = {In press}
+  pages   = {114744},
+  issn    = {0031-3203},
+  doi     = {10.1016/j.patcog.2026.114744}
 }
 ```
 

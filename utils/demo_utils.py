@@ -297,6 +297,7 @@ def build_grounded_sam(dev=None, dino_config=None, dino_weights=None,
     import params.image_preparation_params as P
     from groundingdino.util.inference import Model
     from segment_anything import sam_model_registry, SamPredictor
+    from utils.image_preparation_utils import ensure_grounding_dino_ops
 
     dev = dev or device()
 
@@ -320,6 +321,9 @@ def build_grounded_sam(dev=None, dino_config=None, dino_weights=None,
               "any of this:\nset SEGMENT = False and the notebook will use them as "
               "they are."
         )
+
+    # Survives an install with no CUDA toolchain, on a machine that has a GPU.
+    ensure_grounding_dino_ops()
 
     dino = Model(
         model_config_path=dino_config or P.GROUNDING_DINO_CONFIG_PATH,
