@@ -8,7 +8,8 @@ data/
 ├── images-segmented/<individual>/  Segmentation output (scripts/P1)
 ├── images-pattern/<individual>/    Pattern extraction output (scripts/P1) — what ReMatch matches on
 ├── new/<batch>/                    A batch of photographs to identify
-└── new/<batch>-pattern/            Their pattern crops
+├── new/<batch>-pattern/            Their pattern crops
+└── raw-demo/                       Raw photographs demo-0 walks through, stage by stage
 ```
 
 Nothing here is tracked by git **except** the bundled demo set — the `lizard_*`

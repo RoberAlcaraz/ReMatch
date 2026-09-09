@@ -35,4 +35,9 @@ The vendored copy is not byte-identical to upstream. The changes are:
   described once and reused across all of its pairs.
 - `models/superpoint.py`, `models/wireframe.py` — extended with optional HDF5
   read/write (`save_path`, `image_id` arguments) supporting the same cache.
+- `models/gluestick.py` — `@torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)`
+  on `attention` became
+  `@torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)`. The
+  old spelling is deprecated and warned on every import; the two are equivalent
+  and produce identical output.
 - Formatting only (black) in the remaining files.

@@ -406,12 +406,14 @@ ReMatch/
 ├── params/           Configuration
 ├── utils/            Wireframes, matching, segmentation, pattern extraction
 ├── gluestick/        Vendored GlueStick (MIT) — see gluestick/NOTICE.md
-├── demo-1-training.ipynb   Walk through training, on the bundled lizard data
-├── demo-2-query.ipynb      Walk through identification, including open-set rejection
-├── data/             Your images, plus the bundled lizard demo set
+├── data/             Your images, plus the bundled lizard and zebra demo sets
 ├── models/           Model weights — downloaded, not tracked
 ├── results/          Pipeline outputs and trained models — not tracked
-└── licenses/         Third-party license texts
+├── licenses/         Third-party license texts
+├── demo-0-image-preparation.ipynb   What a photograph goes through first
+├── demo-1-training.ipynb            Match every pair, train, calibrate
+├── demo-2-query.ipynb               Identify a batch, reject unseen animals
+└── demo-3-new-species.ipynb         A second species — your own data starts here
 ```
 
 ---
