@@ -1,0 +1,73 @@
+{
+  "upload_type": "software",
+  "title": "ReMatch: Re-identification of patterned species in open-set scenarios by matching keypoints and lines",
+  "description": "<p>ReMatch identifies individual animals from photographs of their natural patterns — lizard scale mosaics, zebra stripes, seal pelage, shark spots, human fingerprints alike. It segments the individual, matches keypoints <em>and</em> line segments between every pair of images with GlueStick, and turns those correspondences into a calibrated probability that two photographs show the same animal.</p><p>Its distinguishing feature is open-set operation: unlike approaches that assume a fixed set of known individuals, ReMatch detects previously unseen individuals through a learned identity-level threshold, with minimal manual annotation, so a query can be answered <em>\"this is a new animal\"</em> rather than being forced onto the closest known match.</p><p>Across five heterogeneous datasets (Balearic wall lizards, plains zebras, Saimaa ringed seals, whale sharks and human fingerprints) ReMatch achieves an average closed-set Top-1 accuracy of 88.23% (Top-5: 90.22%) and an average open-set accuracy of 85.78%.</p><p>This is the software accompanying the Pattern Recognition (2026) paper. It includes the full training and query pipelines, the vendored GlueStick matching stack, and four demonstration notebooks that run the method end to end on bundled subsets of two species.</p>",
+  "license": "mit",
+  "access_right": "open",
+  "language": "eng",
+  "creators": [
+    {
+      "name": "Alcaraz, Roberto",
+      "affiliation": "Mediterranean Institute for Advanced Studies, IMEDEA (UIB-CSIC), Esporles, Spain"
+    },
+    {
+      "name": "Amores, Angel",
+      "affiliation": "Mediterranean Institute for Advanced Studies, IMEDEA (UIB-CSIC), Esporles, Spain"
+    },
+    {
+      "name": "Villa, Alejandro",
+      "affiliation": "Applied Zoology and Animal Conservation Group, University of the Balearic Islands, Palma, Spain"
+    },
+    {
+      "name": "Marcos, Marta",
+      "affiliation": "Mediterranean Institute for Advanced Studies, IMEDEA (UIB-CSIC), Esporles, Spain"
+    },
+    {
+      "name": "Tavecchia, Giacomo",
+      "affiliation": "Animal Demography and Ecology Unit, IMEDEA (CSIC-UIB), Esporles, Spain"
+    },
+    {
+      "name": "Igual, Jose Manuel",
+      "affiliation": "Animal Demography and Ecology Unit, IMEDEA (CSIC-UIB), Esporles, Spain"
+    },
+    {
+      "name": "Rotger, Andreu",
+      "affiliation": "Animal Demography and Ecology Unit, IMEDEA (CSIC-UIB), Esporles, Spain"
+    }
+  ],
+  "keywords": [
+    "animal re-identification",
+    "photo-identification",
+    "open-set recognition",
+    "keypoint matching",
+    "line matching",
+    "image matching",
+    "computer vision",
+    "capture-recapture",
+    "wildlife monitoring",
+    "biodiversity",
+    "ecology",
+    "GlueStick",
+    "SuperPoint"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.1016/j.patcog.2026.114744",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1038/s41597-026-07411-z",
+      "relation": "references",
+      "resource_type": "dataset",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "https://github.com/RoberAlcaraz/ReMatch",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ]
+}
