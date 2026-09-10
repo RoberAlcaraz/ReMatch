@@ -96,6 +96,15 @@ The images come from **BalearicLizard**, published separately:
 
 ## How it works
 
+![The ReMatch pipeline: image preparation, pattern matching, feature aggregation and model training, run once over a labelled training set and again over each new batch of photographs.](docs/pipeline.png)
+
+*Training (green) and deployment (red) share the first three steps: **(1)** image
+preparation, to extract the region of interest; **(2)** pattern matching between
+image pairs with GlueStick; and **(3)** aggregation of the point and line matches
+into features. Step **(4)** trains a classification model on the training set, and
+applies it to each new photograph to return its ten most likely candidates. An
+asterisk marks an optional step.*
+
 Five stages, common to every dataset:
 
 1. **ROI segmentation** — isolate the animal from its background.
