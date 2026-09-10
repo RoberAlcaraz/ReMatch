@@ -164,11 +164,11 @@ Grounded-SAM also needs GroundingDINO, which is not on PyPI and so cannot be
 pinned there. Install it only if you set `SEGMENTATION_MODEL = "GroundedSAM"`:
 
 ```bash
-uv pip install --no-build-isolation \
+CUDA_VISIBLE_DEVICES="" uv pip install --no-build-isolation \
   "git+https://github.com/IDEA-Research/GroundingDINO.git" "transformers<5"
 ```
 
-Both parts of that command matter. **`--no-build-isolation`**: GroundingDINO's
+All three parts of that command matter. **`--no-build-isolation`**: GroundingDINO's
 `setup.py` imports `torch` at build time without declaring it as a build
 dependency, so in an isolated build environment it fails with
 `ModuleNotFoundError: No module named 'torch'`; the flag lets it see the torch
@@ -176,11 +176,20 @@ you already have. **`transformers<5`**: GroundingDINO wraps BERT through
 `bert_model.get_head_mask`, which transformers 5 removed, so an unpinned install
 imports fine and then dies with
 `AttributeError: 'BertModel' object has no attribute 'get_head_mask'` the moment
-you load the model.
+you load the model. **`CUDA_VISIBLE_DEVICES=""`** stops `setup.py` from trying to
+compile GroundingDINO's CUDA attention kernel — which, against the torch this
+project pins, cannot be compiled at all. Its `ms_deform_attn_cuda.cu` hands
+`value.type()` to `AT_DISPATCH_FLOATING_TYPES`, which wants a `c10::ScalarType`,
+and torch has since removed the implicit conversion from
+`at::DeprecatedTypeProperties`, so `nvcc` stops with `no suitable conversion
+function ... exists` and `pip` aborts the entire install. `setup.py` only
+attempts the build when torch reports a visible GPU, so hiding the GPUs for the
+duration of the install is enough to skip it. It changes nothing about the
+installed package: this is not a CPU-only build.
 
-No CUDA toolchain is needed, and `Failed to load custom C++ ops. Running on
-CPU mode Only!` at import time is expected: without a toolchain `pip` cannot
-build GroundingDINO's compiled attention kernel. ReMatch notices and substitutes
+That is why `Failed to load custom C++ ops. Running on CPU mode Only!` at import
+time is expected, and not a sign of a broken environment — nobody gets that
+kernel with this torch, GPU or no GPU. ReMatch notices and substitutes
 GroundingDINO's own pure-PyTorch one, which runs on a GPU as happily as on a
 CPU — a little slower than the fused op, and the same masks. Do not take that
 warning at its word and force `DEVICE = "cpu"`: on CPU, SAM's ViT-H encoder
