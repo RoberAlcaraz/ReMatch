@@ -60,6 +60,9 @@ supervision==0.27.0            # not imported by ReMatch, but GroundingDINO's
 # The two demos are the advertised entry point, so the notebook server is a
 # runtime dependency, not an optional extra.
 jupyterlab==4.5.2
+# tqdm.auto draws notebook progress bars as widgets; without ipywidgets it
+# falls back to plain text and warns "IProgress not found" on every run.
+ipywidgets==8.1.9
 
 # --- Utilities ---
 omegaconf==2.2.3
