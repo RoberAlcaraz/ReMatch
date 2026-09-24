@@ -63,3 +63,8 @@ nohup*.out
 !/data/new/lizard_demo-pattern/
 !/data/new/zebra_demo/
 /data/new/zebra_demo-segmented/
+
+# Match tables the demos load instead of matching (see data/README.md).
+# Listed again as *.parquet because the rule above ignores every parquet file.
+!/data/precomputed/
+!/data/precomputed/*.parquet

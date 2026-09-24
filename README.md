@@ -74,8 +74,10 @@ uv pip install -r requirements.txt
 uv run jupyter lab
 ```
 
-Matching every pair of the bundled 48 images is 1 128 comparisons: about four
-minutes on a GPU and twenty on a CPU. See [Installation](#installation) if you
+Matching every pair of the bundled 48 images is 1 128 comparisons, about a
+quarter of an hour on a CPU. So the demos load precomputed match tables from
+`data/precomputed/` by default and each runs in a few minutes; set
+`RUN_MATCHING = True` at the top of a notebook to compute them yourself. See [Installation](#installation) if you
 do not have `uv`.
 
 They read their configuration from `params/`, their helpers from `utils/`, and

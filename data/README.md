@@ -9,6 +9,7 @@ data/
 ├── images-pattern/<individual>/    Pattern extraction output (scripts/P1) — what ReMatch matches on
 ├── new/<batch>/                    A batch of photographs to identify
 ├── new/<batch>-pattern/            Their pattern crops
+├── precomputed/                    Match tables for the bundled sets (below)
 └── raw-demo/                       Raw photographs demo-0 walks through, stage by stage
 ```
 
@@ -92,3 +93,22 @@ The 68 crops here are a subset, downscaled to 900 px high. Identity labels
 (`lizard_C116`, `lizard_C373`, …) are the dataset's own annotations with a
 `lizard_` prefix, which is what keeps them distinguishable from your own data in
 `.gitignore`.
+
+## Precomputed match tables
+
+Matching is the slow step of every demo — a quarter of an hour or more per
+notebook on a CPU. `precomputed/` holds the match tables for the two bundled
+sets, which the notebooks load by default (`RUN_MATCHING = False`):
+
+| File | Loaded by |
+|---|---|
+| `lizard_demo_matches.parquet` | `demo-1` — every pair of the lizard gallery |
+| `lizard_demo_query_matches.parquet` | `demo-2` — every lizard query against the gallery |
+| `zebra_demo_matches.parquet` | `demo-3` — every pair of the zebra gallery |
+| `zebra_demo_query_matches.parquet` | `demo-3` — every zebra query against the gallery |
+
+They are produced by `scripts/make_demo_matches.py` with the same calls the
+notebooks make, and a notebook uses one only if it covers exactly the images it
+is about to match. Change the images, or point a notebook at your own, and it
+matches from scratch. Re-run that script whenever the bundled images, the
+wireframe configuration or the matcher change.

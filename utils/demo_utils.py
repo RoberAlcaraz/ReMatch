@@ -252,6 +252,28 @@ def query_vs_gallery_table(pipeline, query_images, gallery_images, dev=None, pro
     return pd.DataFrame(rows)
 
 
+def load_precomputed(path, labelled_images, query_images=None):
+    """A bundled match table, if it was computed from exactly these images.
+
+    Without `query_images` the file is an `all_pairs_table` of `labelled_images`;
+    with them, a `query_vs_gallery_table`. Only names are compared, so the images
+    need not exist on disk yet. Returns None when the file is missing or covers
+    other images — pointing a demo at your own data then matches from scratch,
+    rather than silently scoring it with the bundled results.
+    """
+    path = Path(path)
+    if not path.exists():
+        return None
+    table = pd.read_parquet(path)
+    gallery = {f"{i}/{Path(p).name}" for i, p in labelled_images}
+    if query_images is None:
+        ok = (set(table["img1_full"]) | set(table["img2_full"])) == gallery
+    else:
+        ok = (set(table["gallery_image"]) == gallery
+              and set(table["query"]) == {Path(q).name for q in query_images})
+    return table if ok else None
+
+
 def draw_matches(pred, g0, g1, title=""):
     """Side-by-side match visualisation: points, then lines."""
     import matplotlib.pyplot as plt
