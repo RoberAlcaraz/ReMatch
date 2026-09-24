@@ -20,6 +20,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
+from tqdm.auto import tqdm
 
 from gluestick import batch_to_np, numpy_image_to_torch
 from gluestick.models.two_view_pipeline import TwoViewPipeline
@@ -71,6 +72,17 @@ def build_pipeline(dev=None) -> TwoViewPipeline:
         "ground_truth": {"from_pose_depth": False},
     }
     return TwoViewPipeline(conf).to(dev or device()).eval()
+
+
+# tqdm redraws at most once per this many seconds. The default (0.1 s) sends
+# thousands of output messages over a long matching run, which is itself enough
+# to sink a notebook front-end.
+PROGRESS_INTERVAL = 1.0
+
+
+def _progress(iterable, desc, unit, progress, total=None):
+    return tqdm(iterable, desc=desc, unit=unit, total=total, disable=not progress,
+                mininterval=PROGRESS_INTERVAL, dynamic_ncols=True)
 
 
 # CLAHE (contrast-limited adaptive histogram equalisation) applied to every
@@ -154,17 +166,13 @@ def precompute_wireframes(pipeline, paths, dev=None, progress=True) -> dict:
     dev = dev or device()
     paths = list(dict.fromkeys(str(p) for p in paths))   # de-duplicate, keep order
     cache = {}
-    for n, p in enumerate(paths, 1):
-        if progress and (n % 10 == 0 or n == len(paths)):
-            print(f"\r  wireframes {n}/{len(paths)}", end="", flush=True)
+    for p in _progress(paths, "wireframes", "img", progress):
         gray = load_gray(p)
         with torch.no_grad():
             wf = pipeline.extractor({"image": numpy_image_to_torch(gray).to(dev)[None]})
         # valid_lines is produced by the extractor but not consumed by the matcher.
         cache[str(p)] = {k: v for k, v in wf.items() if k != "valid_lines"}
         del gray, wf
-    if progress:
-        print()
     empty_device_cache(dev)
     return cache
 
@@ -193,14 +201,9 @@ def all_pairs_table(pipeline, labelled_images, dev=None, progress=True) -> pd.Da
     combos = list(itertools.combinations(labelled_images, 2))
     cache = precompute_wireframes(pipeline, [p for _, p in labelled_images], dev, progress)
 
-    # One update per ~1% of the run: a fixed interval would emit thousands of
-    # output messages on a real gallery, which is itself enough to sink a
-    # notebook front-end.
-    step = max(25, len(combos) // 100)
     rows = []
-    for n, ((id_a, pa), (id_b, pb)) in enumerate(combos, 1):
-        if progress and (n % step == 0 or n == len(combos)):
-            print(f"\r  matched {n}/{len(combos)} pairs", end="", flush=True)
+    for n, ((id_a, pa), (id_b, pb)) in enumerate(
+            _progress(combos, "matching", "pair", progress), 1):
         pred = match_cached(pipeline, cache[str(pa)], cache[str(pb)])
         rows.append({
             "img1_full": f"{id_a}/{Path(pa).name}",
@@ -213,8 +216,6 @@ def all_pairs_table(pipeline, labelled_images, dev=None, progress=True) -> pd.Da
         del pred
         if n % 200 == 0:
             empty_device_cache(dev)
-    if progress:
-        print()
     del cache
     empty_device_cache(dev)
     return pd.DataFrame(rows)
@@ -232,26 +233,20 @@ def query_vs_gallery_table(pipeline, query_images, gallery_images, dev=None, pro
     )
 
     rows = []
+    combos = itertools.product(query_images, gallery_images)
     total = len(query_images) * len(gallery_images)
-    step = max(25, total // 100)
-    n = 0
-    for q in query_images:
-        for gid, g in gallery_images:
-            n += 1
-            if progress and (n % step == 0 or n == total):
-                print(f"\r  matched {n}/{total} query-gallery pairs", end="", flush=True)
-            pred = match_cached(pipeline, cache[str(q)], cache[str(g)])
-            rows.append({
-                "query": Path(q).name,
-                "gallery_image": f"{gid}/{Path(g).name}",
-                "id2": gid,
-                **pair_features(pred),
-            })
-            del pred
-            if n % 200 == 0:
-                empty_device_cache(dev)
-    if progress:
-        print()
+    for n, (q, (gid, g)) in enumerate(
+            _progress(combos, "query-gallery", "pair", progress, total), 1):
+        pred = match_cached(pipeline, cache[str(q)], cache[str(g)])
+        rows.append({
+            "query": Path(q).name,
+            "gallery_image": f"{gid}/{Path(g).name}",
+            "id2": gid,
+            **pair_features(pred),
+        })
+        del pred
+        if n % 200 == 0:
+            empty_device_cache(dev)
     del cache
     empty_device_cache(dev)
     return pd.DataFrame(rows)
@@ -363,9 +358,9 @@ def segment_images(models, paths, out_dir, classes, dev=None, progress=True,
     out_dir.mkdir(parents=True, exist_ok=True)
     written, skipped = [], []
 
-    for n, p in enumerate(map(Path, paths), 1):
-        if progress:
-            print(f"\r  segmenting {n}/{len(paths)}  {p.name:<28}", end="", flush=True)
+    bar = _progress(list(map(Path, paths)), "segmenting", "img", progress)
+    for p in bar:
+        bar.set_postfix_str(p.name, refresh=False)
         dst = out_dir / f"{p.stem}.png"
         if dst.exists():                      # resumable, like the pipeline
             written.append(dst)
@@ -409,8 +404,6 @@ def segment_images(models, paths, out_dir, classes, dev=None, progress=True,
             skipped.append((p, f"low confidence {conf:.2f} — review {dst.name}"))
         empty_device_cache(dev)
 
-    if progress:
-        print()
     return written, skipped
 
 
