@@ -407,8 +407,10 @@ def segment_images(models, paths, out_dir, classes, dev=None, progress=True,
 
         mask = segment(sam_predictor=sam_predictor,
                        image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB), xyxy=box)
-        if not center_is_masked(mask[0]):
+        if not center_is_masked(mask[0], box=box[0]):
             # SAM occasionally returns the background; the pipeline retries inverted.
+            # Judged at the centre of the box, not of the photograph, so an
+            # animal away from the middle of the frame keeps its mask.
             mask = segment(sam_predictor=sam_predictor,
                            image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
                            xyxy=box, invert=True)

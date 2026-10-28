@@ -106,10 +106,26 @@ def segment(sam_predictor, image, xyxy, invert=False):
     return np.array(result_masks)
 
 
-def center_is_masked(mask, patch_size=20, sample_points=10, threshold=0.3):
+def center_is_masked(mask, patch_size=20, sample_points=10, threshold=0.3, box=None):
+    """Whether `mask` covers the middle of the subject rather than its surroundings.
+
+    SAM occasionally answers a box prompt with the background around the
+    animal, and the callers then invert the mask. Pass the prompt `box`
+    (x0, y0, x1, y1): the patch is sampled around its centre, which is where
+    the animal is. Without it the patch sits at the centre of the whole image,
+    which is only the animal when the animal is centred in the frame. In a
+    camera-trap shot it rarely is, and the check then inverts a correct mask,
+    keeping the background and blanking the animal.
+    """
     H, W = mask.shape
-    cx, cy = W // 2, H // 2
     half = patch_size // 2
+    if box is None:
+        cx, cy = W // 2, H // 2
+    else:
+        x0, y0, x1, y1 = box
+        # Keep the patch inside the image when the box runs off an edge.
+        cx = int(np.clip((x0 + x1) / 2, half, W - half))
+        cy = int(np.clip((y0 + y1) / 2, half, H - half))
 
     ys = np.random.randint(cy - half, cy + half, size=sample_points)
     xs = np.random.randint(cx - half, cx + half, size=sample_points)
@@ -193,8 +209,8 @@ def GSAM_segmentation(grounding_dino_model, sam_predictor, classes):
                 xyxy=detections.xyxy,
             )
 
-            if not center_is_masked(detections.mask[0]):
-                # Recompute inverted mask if center not covered
+            if not center_is_masked(detections.mask[0], box=detections.xyxy[0]):
+                # Recompute inverted mask if the centre of the box is not covered
                 detections.mask = segment(
                     sam_predictor=sam_predictor,
                     image=cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
