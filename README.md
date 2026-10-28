@@ -426,6 +426,7 @@ ReMatch/
 ├── scripts/          P1–P4 training, Q1–Q5 query — the entry points
 ├── params/           Configuration
 ├── utils/            Wireframes, matching, segmentation, pattern extraction
+├── tests/            Quick checks that need no weights or data
 ├── gluestick/        Vendored GlueStick (MIT) — see gluestick/NOTICE.md
 ├── data/             Your images, plus the bundled lizard and zebra demo sets
 ├── models/           Model weights — downloaded, not tracked
